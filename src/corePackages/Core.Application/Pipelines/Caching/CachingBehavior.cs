@@ -23,35 +23,40 @@ public class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         _cacheSettings = configuration.GetSection("CacheSettings").Get<CacheSettings>();
     }
 
-    public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken,
-                                        RequestHandlerDelegate<TResponse> next)
-    {
-        TResponse response;
-        if (request.BypassCache) return await next();
+    //public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken,
+    //                                    RequestHandlerDelegate<TResponse> next)
+    //{
+       
+    //}
 
-        async Task<TResponse> GetResponseAndAddToCache()
-        {
-            response = await next();
-            TimeSpan? slidingExpiration =
-                request.SlidingExpiration ?? TimeSpan.FromDays(_cacheSettings.SlidingExpiration);
-            DistributedCacheEntryOptions cacheOptions = new() { SlidingExpiration = slidingExpiration };
-            byte[] serializeData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response));
-            await _cache.SetAsync(request.CacheKey, serializeData, cacheOptions, cancellationToken);
-            return response;
-        }
+	public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+	{
+		TResponse response;
+		if (request.BypassCache) return await next();
 
-        byte[]? cachedResponse = await _cache.GetAsync(request.CacheKey, cancellationToken);
-        if (cachedResponse != null)
-        {
-            response = JsonConvert.DeserializeObject<TResponse>(Encoding.Default.GetString(cachedResponse));
-            _logger.LogInformation($"Fetched from Cache -> {request.CacheKey}");
-        }
-        else
-        {
-            response = await GetResponseAndAddToCache();
-            _logger.LogInformation($"Added to Cache -> {request.CacheKey}");
-        }
+		async Task<TResponse> GetResponseAndAddToCache()
+		{
+			response = await next();
+			TimeSpan? slidingExpiration =
+				request.SlidingExpiration ?? TimeSpan.FromDays(_cacheSettings.SlidingExpiration);
+			DistributedCacheEntryOptions cacheOptions = new() { SlidingExpiration = slidingExpiration };
+			byte[] serializeData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(response));
+			await _cache.SetAsync(request.CacheKey, serializeData, cacheOptions, cancellationToken);
+			return response;
+		}
 
-        return response;
-    }
+		byte[]? cachedResponse = await _cache.GetAsync(request.CacheKey, cancellationToken);
+		if (cachedResponse != null)
+		{
+			response = JsonConvert.DeserializeObject<TResponse>(Encoding.Default.GetString(cachedResponse));
+			_logger.LogInformation($"Fetched from Cache -> {request.CacheKey}");
+		}
+		else
+		{
+			response = await GetResponseAndAddToCache();
+			_logger.LogInformation($"Added to Cache -> {request.CacheKey}");
+		}
+
+		return response;
+	}
 }
