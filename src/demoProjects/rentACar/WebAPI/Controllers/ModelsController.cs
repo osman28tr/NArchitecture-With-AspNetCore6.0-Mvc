@@ -24,6 +24,7 @@ namespace WebAPI.Controllers
 		{
 			GetListModelByDynamicQuery getListByDynamicModelQuery = new GetListModelByDynamicQuery { PageRequest = pageRequest, Dynamic = dynamic };
 			ModelListModel modelListModel = await Mediator.Send(getListByDynamicModelQuery);
+			
 			return Ok(modelListModel);
 		}
 	}
