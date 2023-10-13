@@ -21,8 +21,11 @@ namespace Persistance
                                                          configuration.GetConnectionString("RentACarCampConnectionString")));
             services.AddScoped<IBrandRepository, BrandRepository>();
             services.AddScoped<IModelRepository, ModelRepository>();
-
-            return services;
+			services.AddScoped<IUserRepository, UserRepository>();
+			services.AddScoped<IUserOperationClaimRepository, UserOperationClaimRepository>();
+			services.AddScoped<IOperationClaimRepository, OperationClaimRepository>();
+			services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+			return services;
         }
     }
 }
